@@ -2,7 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const app = express();
-
+const dns = require("dns");
 // Basic Configuration
 const port = process.env.PORT || 3000;
 
@@ -10,6 +10,9 @@ app.use(cors());
 
 app.use("/public", express.static(`${process.cwd()}/public`));
 
+app.use(express.urlencoded({ extended: true }));
+
+app.use(express.json());
 // Variable para almacenar los datos de las URL
 const urlDatabase = {};
 
@@ -33,11 +36,11 @@ app.get("/api/shorturl/:short_url", (req, res) => {
 // Ruta POST para /api/shorturl
 app.post("/api/shorturl", (req, res) => {
   const originalUrl = req.body.url; // Suponiendo que el cuerpo de la solicitud contiene la URL en la propiedad 'url'
-
   // Verifica si la URL es válida
-  const urlPattern = /^https?:\/\/[\w.-]+\.[a-zA-Z]{2,}$/;
+  const urlPattern = /^https?:\/\/([\w.-]+\.[a-zA-Z]{2,})(\/\S*)?$/;
+
   if (!urlPattern.test(originalUrl)) {
-    res.status(400).json({ error: "invalid url" }); // Devuelve un error si la URL no es válida
+    res.json({ error: "invalid url" }); // Devuelve un error si la URL no es válida
     return;
   }
 
@@ -45,7 +48,7 @@ app.post("/api/shorturl", (req, res) => {
   const domain = new URL(originalUrl).hostname;
   dns.lookup(domain, (err) => {
     if (err) {
-      res.status(400).json({ error: "invalid url" }); // Devuelve un error si la URL no es accesible
+      res.json({ error: "invalid url" }); // Devuelve un error si la URL no es accesible
     } else {
       // Genera un código corto para la URL
       const shortUrl = generateShortUrl();
